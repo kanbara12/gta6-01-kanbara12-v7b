@@ -155,9 +155,12 @@ function updateCamera(dt) {
     px = G.car.x - f[0] * 13 + r[0] * 3.2; py = 6.8; pz = G.car.z - f[1] * 13 + r[1] * 3.2;
     lx = G.car.x + f[0] * 6; ly = 1.6; lz = G.car.z + f[1] * 6;
   } else if (G.shot === 'mission') {
-    const f = [Math.cos(G.player.heading), -Math.sin(G.player.heading)];
-    px = G.player.x - f[0] * 6.5; py = 3.2; pz = G.player.z - f[1] * 6.5;
-    lx = G.player.x + f[0] * 5; ly = 1.5; lz = G.player.z + f[1] * 5;
+    // Three-quarter view from the south-east: the player's gun side
+    // (east) faces the camera, so the pistol reads in full profile
+    // against the yard instead of foreshortened from behind, and the
+    // muzzle flash sits between the player and the last enemy.
+    px = G.player.x + 4.6; py = 3.0; pz = G.player.z + 5.2;
+    lx = G.player.x - 1.5; ly = 1.4; lz = G.player.z - 8;
   } else if (G.shot === 'end') {
     // Loop complete at the lighthouse: the car parked in front of the
     // tower, the tower rising behind it, ocean beyond.
@@ -171,6 +174,10 @@ function updateCamera(dt) {
     const rx = Math.sin(h), rz = Math.cos(h);
     px = G.car.x - fx * 6.8 + rx * 5.0; py = 2.6; pz = G.car.z - fz * 6.8 + rz * 5.0;
     lx = G.car.x + fx * 7; ly = 1.2; lz = G.car.z + fz * 7;
+    // Play shot: bias the look target toward the sea (left of the
+    // heading) so the ocean, waves and foam line enter the left side
+    // of the frame instead of sitting just outside it.
+    if (G.shot === 'play') { const sea = 7; lx += fz * sea; lz += -fx * sea; }
   } else if (G.mode === 'menu') {
     const a = G.time * 0.08;
     px = G.car.x + Math.cos(a) * 26; py = 12; pz = G.car.z + Math.sin(a) * 26;
@@ -224,7 +231,7 @@ function animate() {
     G.popups = G.popups.filter((p) => p.until > G.time);
   }
   if (G.ocean) G.ocean.material.map.offset.x += dt * 0.008;
-  if (G.foam) G.foam.material.opacity = 0.28 + Math.sin(G.time * 1.4) * 0.1;
+  if (G.foam) G.foam.material.opacity = 0.45 + Math.sin(G.time * 1.4) * 0.12;
   if (G.wheel) G.wheel.rotation.z += dt * 0.12;
   if (G.lightBeam) G.lightBeam.rotation.y += dt * 0.5;
   if (G.marker.mesh) {

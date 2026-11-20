@@ -65,6 +65,30 @@ export function applyShot(name) {
     G.flashUntil = 1e9;
     // No police in the yard frame: the sweep is the player's job alone.
     G.suppressPolice = true;
+    // TARGETS 2/3 with $9,550: two bounties are already banked, so two
+    // of the three yard crew are DOWN on the ground (no health bar) and
+    // only one is left standing in the open with a full green bar.
+    if (G.enemies.length >= 3) {
+      const down = (e) => {
+        e.alive = false; e.hp = 0;
+        e.group.rotation.x = -Math.PI / 2;
+        e.group.position.y = 0.3;
+        if (e.barBg) e.barBg.visible = false;
+        if (e.barFg) e.barFg.visible = false;
+      };
+      down(G.enemies[1]); down(G.enemies[2]);
+      const lead = G.enemies[0];
+      lead.alive = true; lead.hp = 100;
+      lead.x = 162; lead.z = 154;
+      lead.group.position.set(162, 0, 154);
+      lead.group.rotation.x = 0;
+      if (lead.barBg) lead.barBg.visible = true;
+      if (lead.barFg) {
+        lead.barFg.visible = true;
+        lead.barFg.scale.x = 1; lead.barFg.position.x = 0;
+        lead.barFg.material.color.set(0x37d67a);
+      }
+    }
   } else if (name === 'end') {
     G.car.x = -238; G.car.z = -32; G.car.heading = 0.6; G.car.speed = 0;
     G.car.inCar = false; G.player.onFoot = true;

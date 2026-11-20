@@ -22,38 +22,75 @@ export function buildPlayerFigure() {
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.8, 0.22), pants);
     leg.position.set(0, 0.4, s); g.add(leg);
   }
-  // Pistol, held out on the camera side of the body where the shot
-  // camera can see it: dark slide and grip, never a pale ball.
+  // Pistol, built as a WORLD-SPACE group (not a child of the player
+  // figure): every frame updateCombat puts it at the player's gun hand
+  // and aims it along the player's aim direction, so the barrel always
+  // points at the enemy and the shot camera sees the full side profile
+  // — a big dark slide, a bright steel barrel and a dark grip, never a
+  // foreshortened blob and never a pale ball.
   const gun = new THREE.Group();
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.11),
-    new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.5, metalness: 0.4 }));
-  grip.position.y = -0.06; gun.add(grip);
-  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.09),
-    new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.35, metalness: 0.8 }));
-  barrel.position.set(0.28, 0.06, 0); gun.add(barrel);
-  const slide = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.8 }));
-  slide.position.set(0.26, 0.13, 0); gun.add(slide);
-  // Muzzle flash: a starburst, not a ball — a bright core plus crossed
-  // planes and a forward cone, all lit by the flash point light.
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.34, 0.14),
+    new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.5, metalness: 0.4 }));
+  grip.position.set(0, -0.1, -0.05); gun.add(grip);
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.72),
+    new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.25, metalness: 0.9 }));
+  barrel.position.set(0, 0.06, 0.37); gun.add(barrel);
+  const slide = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.55),
+    new THREE.MeshStandardMaterial({ color: 0x0d0d0d, roughness: 0.3, metalness: 0.85 }));
+  slide.position.set(0, 0.14, 0.28); gun.add(slide);
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.05),
+    new THREE.MeshBasicMaterial({ color: 0xffc860 }));
+  sight.position.set(0, 0.22, 0.58); gun.add(sight);
+  // Muzzle flash: a starburst, not a ball — a bright core, crossed
+  // spike pairs in TWO perpendicular planes (so at least one pair
+  // faces the shot camera from any angle), a forward cone, and a
+  // camera-facing starburst sprite that always reads as a flash.
   const flashGroup = new THREE.Group();
+  flashGroup.position.set(0, 0.06, 0.78);
   const flashMat = new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0 });
-  const flashCore = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), flashMat);
-  flashCore.position.set(0.6, 0.06, 0); flashGroup.add(flashCore);
+  const flashCore = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), flashMat);
+  flashGroup.add(flashCore);
   const flashMat2 = new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
-  const spikeH = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.22), flashMat2);
-  spikeH.position.set(0.62, 0.06, 0); flashGroup.add(spikeH);
-  const spikeV = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.95), flashMat2);
-  spikeV.position.set(0.62, 0.06, 0); flashGroup.add(spikeV);
-  const flashCone = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.7, 10), flashMat2);
-  flashCone.rotation.z = -Math.PI / 2; flashCone.position.set(0.85, 0.06, 0); flashGroup.add(flashCone);
+  const spikeH = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.3), flashMat2);
+  flashGroup.add(spikeH);
+  const spikeV = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.3), flashMat2);
+  flashGroup.add(spikeV);
+  const spikeH2 = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.3), flashMat2);
+  spikeH2.rotation.y = Math.PI / 2; flashGroup.add(spikeH2);
+  const spikeV2 = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.3), flashMat2);
+  spikeV2.rotation.y = Math.PI / 2; flashGroup.add(spikeV2);
+  const flashCone = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.9, 10), flashMat2);
+  flashCone.rotation.x = -Math.PI / 2; flashCone.position.set(0, 0, 0.45); flashGroup.add(flashCone);
+  const starTex = (() => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d'); x.translate(64, 64);
+    for (let i = 0; i < 8; i++) {
+      x.rotate(Math.PI / 4);
+      const g = x.createLinearGradient(0, 0, 0, -62);
+      g.addColorStop(0, 'rgba(255, 240, 190, 1)');
+      g.addColorStop(0.5, 'rgba(255, 176, 32, 0.9)');
+      g.addColorStop(1, 'rgba(255, 120, 20, 0)');
+      x.fillStyle = g;
+      x.beginPath(); x.moveTo(-5, 0); x.lineTo(0, -62); x.lineTo(5, 0); x.closePath(); x.fill();
+    }
+    const core = x.createRadialGradient(0, 0, 1, 0, 0, 22);
+    core.addColorStop(0, 'rgba(255, 255, 240, 1)');
+    core.addColorStop(0.5, 'rgba(255, 210, 122, 0.95)');
+    core.addColorStop(1, 'rgba(255, 160, 40, 0)');
+    x.fillStyle = core; x.beginPath(); x.arc(0, 0, 22, 0, 7); x.fill();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const flashSpriteMat = new THREE.SpriteMaterial({ map: starTex, transparent: true, opacity: 0, depthWrite: false });
+  const flashSprite = new THREE.Sprite(flashSpriteMat);
+  flashSprite.scale.set(2.0, 2.0, 1);
+  flashGroup.add(flashSprite);
   gun.add(flashGroup);
-  gun.position.set(0.28, 1.3, 0.3);
-  g.add(gun);
+  gun.visible = false;
+  G.scene.add(gun);
   G.player.gun = gun; G.player.flashMat = flashMat; G.player.flashMat2 = flashMat2;
-  G.player.flashGroup = flashGroup;
-  const light = new THREE.PointLight(0xffd27a, 0, 12);
-  light.position.set(0.8, 1.4, 0.3); g.add(light);
+  G.player.flashSpriteMat = flashSpriteMat; G.player.flashGroup = flashGroup;
+  const light = new THREE.PointLight(0xffd27a, 0, 14);
+  light.position.set(0, 0.06, 0.9); gun.add(light);
   G.player.flashLight = light;
 
   g.position.set(G.player.x, 0, G.player.z);
@@ -85,7 +122,7 @@ export function buildEnemies() {
     barFg.position.set(0, 2.4, 0.01); g.add(barFg);
     g.position.set(x, 0, z);
     G.scene.add(g);
-    G.enemies.push({ group: g, barFg, x, z, hp: 100, alive: true, shootTimer: 1 + i });
+    G.enemies.push({ group: g, barBg, barFg, x, z, hp: 100, alive: true, shootTimer: 1 + i });
   });
 }
 
@@ -130,12 +167,23 @@ export function updateCombat(dt) {
     p.group.position.set(p.x, 0, p.z);
     p.group.rotation.y = -p.heading;
   }
+  // World-space pistol: at the player's gun hand (right side of the
+  // aim direction), barrel along the aim, hidden whenever the player
+  // figure is hidden or the player is in the car.
+  if (p.gun) {
+    const aimX = Math.cos(p.heading), aimZ = -Math.sin(p.heading);
+    const rx = -aimZ, rz = aimX;
+    p.gun.position.set(p.x + rx * 0.5 + aimX * 0.1, 1.32, p.z + rz * 0.5 + aimZ * 0.1);
+    p.gun.lookAt(p.x + aimX * 3, 1.32, p.z + aimZ * 3);
+    p.gun.visible = !!(p.group && p.group.visible) && p.onFoot && G.mode === 'play';
+  }
   const flashing = G.time < G.flashUntil;
   if (p.flashMat) {
     p.flashMat.opacity = flashing ? 0.95 : 0;
     if (p.flashMat2) p.flashMat2.opacity = flashing ? 0.9 : 0;
+    if (p.flashSpriteMat) p.flashSpriteMat.opacity = flashing ? 0.95 : 0;
     if (p.flashGroup) p.flashGroup.visible = flashing;
-    p.flashLight.intensity = flashing ? 14 : 0;
+    p.flashLight.intensity = flashing ? 20 : 0;
   }
   // Enemies edge toward the player and shoot back inside 20 metres.
   for (const e of G.enemies) {

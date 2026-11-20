@@ -37,11 +37,11 @@ export function buildHeli() {
   G.heliRotor = rotor;
   // Spotlight: a soft translucent cone and a bright pool where it lands.
   const cone = new THREE.Mesh(new THREE.ConeGeometry(5.5, 22, 20, 1, true),
-    new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: 0.42, side: THREE.DoubleSide, depthWrite: false }));
   cone.position.y = -12; g.add(cone);
   G.heliCone = cone;
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(4, 24),
-    new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.22, depthWrite: false }));
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(5.5, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.45, depthWrite: false }));
   pool.rotation.x = -Math.PI / 2;
   G.scene.add(pool);
   G.heliPool = pool;
@@ -74,6 +74,6 @@ export function updateHeli(dt) {
   // The cone hangs straight down from the heli; the pool sits on the
   // road under the player, so the beam reads as tracking the car.
   G.heliPool.position.set(px, 0.2, pz);
-  const pulse = 0.2 + Math.sin(G.time * 3) * 0.04;
+  const pulse = 0.45 + Math.sin(G.time * 3) * 0.05;
   G.heliPool.material.opacity = pulse;
 }
